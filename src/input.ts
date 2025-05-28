@@ -799,4 +799,7 @@ handlers.beforeinput = (view, _event: Event) => {
 }
 
 // Make sure all handlers get registered
+// editHandlers：编辑事件?
+// handlers:所有的事件?
+// 确保所有的事件都被注册(editHandlers所有事件在handlers上都会有)
 for (let prop in editHandlers) handlers[prop] = editHandlers[prop]

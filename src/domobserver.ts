@@ -4,13 +4,14 @@ import {domIndex, isEquivalentPosition, selectionCollapsed, parentNode, DOMSelec
 import {hasFocusAndSelection, selectionToDOM, selectionFromDOM} from "./selection"
 import {EditorView} from "./index"
 
+// 监听dom变化的选项
 const observeOptions = {
-  childList: true,
-  characterData: true,
-  characterDataOldValue: true,
-  attributes: true,
-  attributeOldValue: true,
-  subtree: true
+  childList: true, // 子节点的变化
+  characterData: true, // 节点文本内容的变化
+  characterDataOldValue: true, // 在回调函数的记录中，是否包含被修改的文本节点的旧值
+  attributes: true, // 观察节点的属性变化
+  attributeOldValue: true, // 在回调函数的记录中，是否包含被修改的属性的旧值
+  subtree: true // 观察目标节点及其所有后代节点的变化
 }
 // IE11 has very broken mutation observers, so we also listen to DOMCharacterDataModified
 const useCharData = browser.ie && browser.ie_version <= 11
@@ -50,6 +51,7 @@ export class DOMObserver {
   ) {
     this.observer = window.MutationObserver &&
       new window.MutationObserver(mutations => {
+        // 变化计入队列
         for (let i = 0; i < mutations.length; i++) this.queue.push(mutations[i])
         // IE11 will sometimes (on backspacing out a single character
         // text node after a BR node) call the observer callback
@@ -158,6 +160,9 @@ export class DOMObserver {
   }
 
   pendingRecords() {
+    // observer.takeRecords 取出所有记录，并清空队列
+    // 用来获取尚未处理的变动记录(指尚未进入MutationObserver的回调)；
+    // 可能存在进行flush时，新的变动记录进入队列(例如协同改变了内容)，但未进入MutationObserver的回调，所以需要再次调用takeRecords，保持及时性和准确性
     if (this.observer) for (let mut of this.observer.takeRecords()) this.queue.push(mut)
     return this.queue
   }

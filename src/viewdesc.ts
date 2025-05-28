@@ -1389,6 +1389,7 @@ function compareSide(a: Decoration, b: Decoration) {
 // a fragment. Calls `onNode` for each node, with its local and child
 // decorations. Splits text nodes when there is a decoration starting
 // or ending inside of them. Calls `onWidget` for each widget.
+// 遍历文档
 function iterDeco(
   parent: Node,
   deco: DecorationSource,

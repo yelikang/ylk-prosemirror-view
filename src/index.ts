@@ -85,8 +85,9 @@ export class EditorView {
     this.editable = getEditable(this)
     updateCursorWrapper(this)
     this.nodeViews = buildNodeViews(this)
+    // 文档视图对象
     this.docView = docViewDesc(this.state.doc, computeDocDeco(this), viewDecorations(this), this.dom, this)
-
+    // 构建EditorView时，构建DOMObserver观察者对象；通过start方法，观察DOM变化
     this.domObserver = new DOMObserver(this, (from, to, typeOver, added) => readDOMChange(this, from, to, typeOver, added))
     this.domObserver.start()
     initInput(this)

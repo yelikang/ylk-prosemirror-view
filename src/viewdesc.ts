@@ -751,6 +751,7 @@ export class NodeViewDesc extends ViewDesc {
     if (updater.changed || this.dirty == CONTENT_DIRTY) {
       // May have to protect focused DOM from being changed if a composition is active
       if (localComposition) this.protectLocalComposition(view, localComposition)
+      // 将children(构建的虚拟NodeViewDesc/TextViewDesc)渲染为真实的dom
       renderDescs(this.contentDOM!, this.children, view)
       if (browser.ios) iosHacks(this.dom as HTMLElement)
     }
@@ -1282,6 +1283,7 @@ class ViewTreeUpdater {
   addNode(node: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource, view: EditorView, pos: number) {
     let desc = NodeViewDesc.create(this.top, node, outerDeco, innerDeco, view, pos)
     if (desc.contentDOM) desc.updateChildren(view, pos + 1)
+    // 添加到父NodeViewDesc的children中
     this.top.children.splice(this.index++, 0, desc)
     this.changed = true
   }

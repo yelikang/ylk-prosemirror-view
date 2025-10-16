@@ -90,6 +90,7 @@ export class EditorView {
     // 构建EditorView时，构建DOMObserver观察者对象；通过start方法，观察DOM变化
     this.domObserver = new DOMObserver(this, (from, to, typeOver, added) => readDOMChange(this, from, to, typeOver, added))
     this.domObserver.start()
+    // 编辑器事件监听
     initInput(this)
     this.updatePluginViews()
   }
@@ -300,12 +301,14 @@ export class EditorView {
     propName: PropName,
     f?: (value: NonNullable<EditorProps[PropName]>) => Result
   ): Result | undefined {
+    // 执行EditorView的props上的方法；Tiptap构建EditorView时，会预设部分props
     let prop = this._props && this._props[propName], value
     if (prop != null && (value = f ? f(prop as any) : prop)) return value as any
     for (let i = 0; i < this.directPlugins.length; i++) {
       let prop = this.directPlugins[i].props[propName]
       if (prop != null && (value = f ? f(prop as any) : prop)) return value as any
     }
+    // 执行EditorView上绑定的Prosemirror Plugin的props上的方法
     let plugins = this.state.plugins
     if (plugins) for (let i = 0; i < plugins.length; i++) {
       let prop = plugins[i].props[propName]

@@ -12,6 +12,7 @@ import {ViewDesc} from "./viewdesc"
 
 // A collection of DOM events that occur within the editor, and callback functions
 // to invoke when the event fires.
+// 各类事件处理
 const handlers: {[event: string]: (view: EditorView, event: Event) => void} = {}
 const editHandlers: {[event: string]: (view: EditorView, event: Event) => void} = {}
 const passiveHandlers: Record<string, boolean> = {touchstart: true, touchmove: true}
@@ -45,7 +46,9 @@ export class InputState {
 export function initInput(view: EditorView) {
   for (let event in handlers) {
     let handler = handlers[event]
+    // 监听编辑器元素的所有事件
     view.dom.addEventListener(event, view.input.eventHandlers[event] = (event: Event) => {
+      // 可编辑 || 不可编辑时，事件只在handlers中(不在editHandlers中)时执行
       if (eventBelongsToView(view, event) && !runCustomHandler(view, event) &&
           (view.editable || !(event.type in editHandlers)))
         handler(view, event)
@@ -128,6 +131,7 @@ editHandlers.keydown = (view: EditorView, _event: Event) => {
       }
     }, 200)
   } else if (view.someProp("handleKeyDown", f => f(view, event)) || captureKeyDown(view, event)) {
+    // 执行EditorView的props上的handleKeyDown方法
     event.preventDefault()
   } else {
     setSelectionOrigin(view, "key")
@@ -799,7 +803,7 @@ handlers.beforeinput = (view, _event: Event) => {
 }
 
 // Make sure all handlers get registered
-// editHandlers：编辑事件?
+// editHandlers：编辑事件?（只有编辑状态才会执行）
 // handlers:所有的事件?
 // 确保所有的事件都被注册(editHandlers所有事件在handlers上都会有)
 for (let prop in editHandlers) handlers[prop] = editHandlers[prop]

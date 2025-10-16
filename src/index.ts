@@ -150,6 +150,8 @@ export class EditorView {
   /// Update the editor's `state` prop, without touching any of the
   /// other props.
   updateState(state: EditorState) {
+    // Tiptap在构造完EditorView后，会调用updateState方法，更新EditorView的state
+    // state中包含更新后的plugins
     this.updateStateInner(state, this._props)
   }
 

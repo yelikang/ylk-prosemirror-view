@@ -644,9 +644,13 @@ export class NodeViewDesc extends ViewDesc {
 
     let dom = spec && spec.dom, contentDOM = spec && spec.contentDOM
     if (node.isText) {
+      // 如果是文本Node，就直接创建文本节点
       if (!dom) dom = document.createTextNode(node.text!)
       else if (dom.nodeType != 3) throw new RangeError("Text must be rendered as a DOM text node")
     } else if (!dom) {
+      // 1.如果没有找到dom
+      // 2.先通过node.type.spec.toDOM(tiptap Node的renderHTML)方法获取对应类型需要渲染成的节点
+      // 3.通过document构建对应的真实浏览器dom
       ;({dom, contentDOM} = DOMSerializer.renderSpec(document, node.type.spec.toDOM!(node)))
     }
     if (!contentDOM && !node.isText && dom.nodeName != "BR") { // Chrome gets confused by <br contenteditable=false>
@@ -708,12 +712,17 @@ export class NodeViewDesc extends ViewDesc {
   // decorations, possibly introducing nesting for marks. Then, in a
   // separate step, syncs the DOM inside `this.contentDOM` to
   // `this.children`.
+  /**
+   * 处理children
+   */
   updateChildren(view: EditorView, pos: number) {
     let inline = this.node.inlineContent, off = pos
     let composition = view.composing ? this.localCompositionInfo(view, pos) : null
     let localComposition = composition && composition.pos > -1 ? composition : null
     let compositionInChild = composition && composition.pos < 0
+    // 每一个NodeViewDesc，在updateChildren时；创建一个updater进行处理
     let updater = new ViewTreeUpdater(this, localComposition && localComposition.node, view)
+    // 递归Node节点，每递归到一个子Node，就用updater进行相应的处理
     iterDeco(this.node, this.innerDeco, (widget, i, insideNode) => {
       if (widget.spec.marks)
         updater.syncToMarks(widget.spec.marks, inline, view)
@@ -737,7 +746,8 @@ export class NodeViewDesc extends ViewDesc {
       } else if (updater.updateNextNode(child, outerDeco, innerDeco, view, i, off)) {
         // Could update an existing node to reflect this node
       } else {
-        // Add it as a new view
+        // Add it as a new view 添加一个子的NodeViewDesc，并构建与父NodeViewDesc的关联关系
+        // 所以下面renderDescs时，this.children 才会有值
         updater.addNode(child, outerDeco, innerDeco, view, off)
       }
       off += child.nodeSize
@@ -751,7 +761,7 @@ export class NodeViewDesc extends ViewDesc {
     if (updater.changed || this.dirty == CONTENT_DIRTY) {
       // May have to protect focused DOM from being changed if a composition is active
       if (localComposition) this.protectLocalComposition(view, localComposition)
-      //  将children(构建的虚拟NodeViewDesc/TextViewDesc)渲染为真实的dom
+      //  开始渲染：将children(构建的虚拟NodeViewDesc/TextViewDesc)渲染为真实的dom（先child、再parent）
       renderDescs(this.contentDOM!, this.children, view)
       if (browser.ios) iosHacks(this.dom as HTMLElement)
     }
@@ -844,7 +854,7 @@ export class NodeViewDesc extends ViewDesc {
 
 /**
  *  Create a view desc for the top-level document node, to be exported;and used by the view class.
- *  将doc转换为view的description(描述器)
+ *  开始doc渲染：将doc转换为view的description(描述器)
  *  @param doc Promsemirror的doc:Node对象(由Element转换成的抽象Node)
  *  @param outerDeco 外部装饰器:用来修饰编辑器最外层this.dom对象
  *  @param innerDeco 内部装饰器:用来修改this.dom内部对象,编辑器内容层装饰器
@@ -986,6 +996,9 @@ class CustomNodeViewDesc extends NodeViewDesc {
 // Sync the content of the given DOM node with the nodes associated
 // with the given array of view descs, recursing into mark descs
 // because this should sync the subtree for a whole node at a time.
+/**
+ * 将子ViewDesc内容，添加到父节点上
+ */
 function renderDescs(parentDOM: HTMLElement, descs: readonly ViewDesc[], view: EditorView) {
   let dom = parentDOM.firstChild, written = false
   for (let i = 0; i < descs.length; i++) {
@@ -995,6 +1008,7 @@ function renderDescs(parentDOM: HTMLElement, descs: readonly ViewDesc[], view: E
       dom = dom.nextSibling
     } else {
       written = true
+      // 子DOMNode 插入父
       parentDOM.insertBefore(childDOM, dom)
     }
     if (desc instanceof MarkViewDesc) {
@@ -1288,9 +1302,13 @@ class ViewTreeUpdater {
     return wrapper
   }
 
-  // Insert the node as a newly created node desc.
+  /**
+   * Insert the node as a newly created node desc.
+   * 处理子节点时，创建新的NodeViewDesc
+   */
   addNode(node: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource, view: EditorView, pos: number) {
     let desc = NodeViewDesc.create(this.top, node, outerDeco, innerDeco, view, pos)
+    // 子节点继续更新下级子节点（没有contentDOM: 代表是文本节点，也就没有下级）
     if (desc.contentDOM) desc.updateChildren(view, pos + 1)
     // 添加到父NodeViewDesc的children中
     this.top.children.splice(this.index++, 0, desc)
@@ -1396,11 +1414,18 @@ function compareSide(a: Decoration, b: Decoration) {
   return (a.type as WidgetType).side - (b.type as WidgetType).side
 }
 
-// This function abstracts iterating over the nodes and decorations in
-// a fragment. Calls `onNode` for each node, with its local and child
-// decorations. Splits text nodes when there is a decoration starting
-// or ending inside of them. Calls `onWidget` for each widget.
-// 遍历文档
+/**
+ * This function abstracts iterating over the nodes and decorations in
+ * a fragment. Calls `onNode` for each node, with its local and child
+ * decorations. Splits text nodes when there is a decoration starting
+ * or ending inside of them. Calls `onWidget` for each widget.
+ * 遍历Node文档
+ * @param parent 当前正在被遍历的Node节点
+ * @param deco  节点Decoration(装饰器)
+ * @param onWidget 遇到一个小部件装饰器，就会调用这个函数
+ * @param onNode 每处理一个子节点，就会调用这个函数
+ * @returns 
+ */
 function iterDeco(
   parent: Node,
   deco: DecorationSource,

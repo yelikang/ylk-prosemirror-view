@@ -288,12 +288,19 @@ export class EditorView {
                                  found < 0 ? undefined : NodeSelection.create(this.state.doc, found))
   }
 
-  /// Goes over the values of a prop, first those provided directly,
-  /// then those from plugins given to the view, then from plugins in
-  /// the state (in order), and calls `f` every time a non-undefined
-  /// value is found. When `f` returns a truthy value, that is
-  /// immediately returned. When `f` isn't provided, it is treated as
-  /// the identity function (the prop value is returned directly).
+  
+  /**
+   * 
+   * Goes over the values of a prop, first those provided directly,
+   * then those from plugins given to the view, then from plugins in
+   * the state (in order), and calls `f` every time a non-undefined
+   * value is found. When `f` returns a truthy value, that is
+   * immediately returned. When `f` isn't provided, it is treated as
+   * the identity function (the prop value is returned directly).
+   * 从上层获取一些属性(构建实例时传入属性、构建EditorView时传递的直属Plugin、state上Plugin上的属性) ;获取到之后通过f回调函数进行处理
+   * @param propName 
+   * @param f 
+   */
   someProp<PropName extends keyof EditorProps, Result>(
     propName: PropName,
     f: (value: NonNullable<EditorProps[PropName]>) => Result
@@ -303,14 +310,14 @@ export class EditorView {
     propName: PropName,
     f?: (value: NonNullable<EditorProps[PropName]>) => Result
   ): Result | undefined {
-    // 执行EditorView的props上的方法；Tiptap构建EditorView时，会预设部分props
+    // 执行EditorView的props上的方法；Tiptap构建EditorView时，会预设部分props - [取实例化EditorView时传递的参数]
     let prop = this._props && this._props[propName], value
     if (prop != null && (value = f ? f(prop as any) : prop)) return value as any
     for (let i = 0; i < this.directPlugins.length; i++) {
       let prop = this.directPlugins[i].props[propName]
       if (prop != null && (value = f ? f(prop as any) : prop)) return value as any
     }
-    // 执行EditorView上绑定的Prosemirror Plugin的props上的方法
+    // 执行EditorView上绑定的Prosemirror Plugin的props上的方法 - [取Plugin上的props]
     let plugins = this.state.plugins
     if (plugins) for (let i = 0; i < plugins.length; i++) {
       let prop = plugins[i].props[propName]

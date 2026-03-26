@@ -751,7 +751,7 @@ export class NodeViewDesc extends ViewDesc {
     if (updater.changed || this.dirty == CONTENT_DIRTY) {
       // May have to protect focused DOM from being changed if a composition is active
       if (localComposition) this.protectLocalComposition(view, localComposition)
-      // 将children(构建的虚拟NodeViewDesc/TextViewDesc)渲染为真实的dom
+      //  将children(构建的虚拟NodeViewDesc/TextViewDesc)渲染为真实的dom
       renderDescs(this.contentDOM!, this.children, view)
       if (browser.ios) iosHacks(this.dom as HTMLElement)
     }
@@ -842,12 +842,21 @@ export class NodeViewDesc extends ViewDesc {
   get domAtom() { return this.node.isAtom }
 }
 
-// Create a view desc for the top-level document node, to be exported
-// and used by the view class.
+/**
+ *  Create a view desc for the top-level document node, to be exported;and used by the view class.
+ *  将doc转换为view的description(描述器)
+ *  @param doc Promsemirror的doc:Node对象(由Element转换成的抽象Node)
+ *  @param outerDeco 外部装饰器:用来修饰编辑器最外层this.dom对象
+ *  @param innerDeco 内部装饰器:用来修改this.dom内部对象,编辑器内容层装饰器
+ *  @param dom 文档视图的dom元素(HTMLElement)
+ *  @param view 编辑器视图对象(EditorView)
+ *  @returns 文档视图描述器(NodeViewDesc)
+ */
 export function docViewDesc(doc: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource,
                             dom: HTMLElement, view: EditorView): NodeViewDesc {
   applyOuterDeco(dom, outerDeco, doc)
   let docView = new NodeViewDesc(undefined, doc, outerDeco, innerDeco, dom, dom, dom, view, 0)
+  // 构建NodeViewDesc，开始将虚拟的Node渲染为真实Dom
   if (docView.contentDOM) docView.updateChildren(view, 0)
   return docView
 }

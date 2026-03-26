@@ -454,6 +454,7 @@ function inOrNearComposition(view: EditorView, event: Event) {
 // Drop active composition after 5 seconds of inactivity on Android
 const timeoutComposition = browser.android ? 5000 : -1
 
+// 输入法输入事件(切换到输入法) | 输入法持续输入事件
 editHandlers.compositionstart = editHandlers.compositionupdate = view => {
   if (!view.composing) {
     view.domObserver.flush()
@@ -489,7 +490,7 @@ editHandlers.compositionstart = editHandlers.compositionupdate = view => {
   }
   scheduleComposeEnd(view, timeoutComposition)
 }
-
+// 输入法完成事件(选定候选词之后)
 editHandlers.compositionend = (view, event) => {
   if (view.composing) {
     view.input.composing = false

@@ -90,7 +90,7 @@ export class EditorView {
     // 构建EditorView时，构建DOMObserver观察者对象；通过start方法，观察DOM变化
     this.domObserver = new DOMObserver(this, (from, to, typeOver, added) => readDOMChange(this, from, to, typeOver, added))
     this.domObserver.start()
-    // 编辑器事件监听
+    // 编辑器事件监听(事件处理入口)
     initInput(this)
     this.updatePluginViews()
   }
